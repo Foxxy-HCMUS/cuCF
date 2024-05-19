@@ -3,12 +3,31 @@ from module import *
 USER_INDEX = 0
 ITEM_INDEX = 1
 RATING_INDEX = 2
-def get_time():
-    return datetime.datetime.now()
 
-def get_difference_time(start_time, end_time):
-    return end_time - start_time
+class DataReader:
+    def __init__(self, file_path = None):
+        self.file_path = file_path
 
+    def readCSV(self):
+        if not self.file_path.endswith('.csv'):
+            raise ValueError('Invalid file format')
+        else:
+            with open(self.file_path, 'r', encoding='utf-8') as f:
+                data = f.read()
+                return data
+            
+    def readTXT(self):
+        with open(self.file_path, 'r', encoding='utf-8') as f:
+            data = f.readlines()
+            data = [line.strip('\n').split('\t') for line in data]
+            data = [list(map(int, line)) for line in data]
+            data = np.array(data)
+            data = np.delete(data, (len(data[0]) -1), axis = 1)
+            
+            # Set the starter index to 0
+            data[:,0: 2] = data[:, 0: 2] - 1
+            return data
+        
 def get_utility_matrix(data):
     n_users = data[:, USER_INDEX].max() + 1
     n_items = data[:, ITEM_INDEX].max() + 1
@@ -41,29 +60,3 @@ def serial_mean(utility_matrix):
             avg = 0
 
     return utility_matrix, avg_users
-        
-
-def build_similarity_matrix_cosine_similarity(mean_matrix):
-    n_items = mean_matrix.shape[1]  
-    n_users = mean_matrix.shape[0]
-    similarity_matrix = np.zeros((n_users, n_users))
-    similarity = 0
-    for us in range(n_users):
-        for other_u in range(n_users):
-            if us == other_u:
-                similarity = 1
-            elif us < other_u:
-                numerator = 0
-                sum_us = 0
-                sum_other_u = 0
-                for i in range(n_items):
-                    numerator+= mean_matrix[us][i] * mean_matrix[other_u][i]
-                    sum_us += mean_matrix[us][i]**2
-                    sum_other_u += mean_matrix[other_u][i]**2
-                similarity = numerator/ (np.sqrt(sum_us) * np.sqrt(sum_other_u)) 
-            similarity_matrix[us][other_u] = similarity
-            similarity_matrix[other_u][us] = similarity
-    
-    
-    return similarity_matrix
-
